@@ -240,12 +240,19 @@
       if (window.console) console.info("Modo prueba. Datos que se enviarían:", Object.fromEntries(fd.entries()));
       return fin(true);
     }
-    fetch(CONFIG.brevoFormUrl, { method: "POST", body: fd, mode: "no-cors" })
-      .then(function () { fin(false); })
-      .catch(function () {
-        boton.disabled = false; boton.textContent = "Apuntarme gratis";
-        mostrarError(err, "No se ha podido enviar. Revisa tu conexión y vuelve a intentarlo.");
-      });
+    var fallo = function (msg) {
+      boton.disabled = false; boton.textContent = "Apuntarme gratis";
+      mostrarError(err, msg || "No se ha podido enviar. Revisa tu conexión y vuelve a intentarlo.");
+      if (window.console) console.warn("Brevo rechazó el alta:", msg);
+    };
+    // Brevo permite leer su respuesta desde mientrascrece.com (CORS): {"success": true} o {"success": false, "message": "…"}.
+    fetch(CONFIG.brevoFormUrl, { method: "POST", body: fd })
+      .then(function (r) { return r.json().catch(function () { return { success: r.ok }; }); })
+      .then(function (j) {
+        if (j && j.success) return fin(false);
+        fallo("No hemos podido apuntarte. Revisa tu email y vuelve a intentarlo; si sigue fallando, escríbenos a hola@mientrascrece.com.");
+      })
+      .catch(function () { fallo(); });
   });
 
   ajustarTipo();
