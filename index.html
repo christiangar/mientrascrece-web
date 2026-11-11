@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mientras Crece · Lo que vive tu hijo esta semana, a su edad exacta</title>
+  <meta name="description" content="Un email cada semana sobre tu hijo a su edad exacta, con su nombre y una sola cosa que puedes hacer hoy. Del embarazo a los 6 años. Gratis, con fuentes oficiales.">
+  <!-- Quitar al abrir la suscripción (privacidad revisada y Brevo conectado) -->
+  <meta name="robots" content="noindex, nofollow">
+  <meta property="og:title" content="Mientras Crece">
+  <meta property="og:description" content="Cada semana, lo que vive tu hijo a su edad exacta. Con fuentes oficiales.">
+  <meta property="og:type" content="website">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+  <header class="cabecera">
+    <a class="marca" href="./">Mientras Crece</a>
+  </header>
+
+  <main>
+    <section class="portada" aria-labelledby="titulo">
+      <h1 id="titulo">Lo que vive tu hijo esta semana, <em>a su edad exacta</em>.</h1>
+      <p class="entradilla">Un email cada semana, con su nombre, sobre lo que está pasando en su cabeza y una sola cosa que puedes hacer hoy. Del embarazo a los 6 años. Gratis y con fuentes oficiales.</p>
+
+      <form id="paso1" class="tarjeta" novalidate>
+        <fieldset class="opciones">
+          <legend>Cuéntanos en qué momento estáis</legend>
+          <label class="opcion"><input type="radio" name="tipo" value="nacido" checked> <span>Ya ha nacido</span></label>
+          <label class="opcion"><input type="radio" name="tipo" value="embarazo"> <span>Estamos esperando</span></label>
+        </fieldset>
+
+        <div class="campo" id="campo-nombre">
+          <label for="nombre">Su nombre</label>
+          <input id="nombre" name="nombre" type="text" autocomplete="off" maxlength="40" placeholder="Por ejemplo, Lucía">
+        </div>
+
+        <div class="campo">
+          <label for="fecha" id="etiqueta-fecha">Su fecha de nacimiento</label>
+          <input id="fecha" name="fecha" type="date" required>
+          <p class="ayuda" id="ayuda-fecha">Con su fecha sabemos su edad exacta cada semana.</p>
+        </div>
+
+        <div class="campo prematuro" id="bloque-prematuro">
+          <label class="casilla"><input type="checkbox" id="prematuro"> Nació antes de la semana 37</label>
+          <div class="campo" id="campo-semanas" hidden>
+            <label for="semanas">¿En qué semana de embarazo nació?</label>
+            <input id="semanas" type="number" min="22" max="36" inputmode="numeric" placeholder="Por ejemplo, 34">
+            <p class="ayuda">Hasta los 2 años, su desarrollo se cuenta por la edad corregida.</p>
+          </div>
+        </div>
+
+        <p class="error" id="error1" role="alert" hidden></p>
+        <button type="submit" class="boton">Ver su semana</button>
+      </form>
+    </section>
+
+    <section id="resultado" class="resultado" hidden aria-live="polite">
+      <div class="tarjeta envio">
+        <p class="edad" id="r-edad"></p>
+        <h2 id="r-titular"></h2>
+        <p id="r-texto"></p>
+        <p class="cierre" id="r-cierre"></p>
+        <p class="aviso" id="r-aviso" hidden></p>
+      </div>
+
+      <form id="paso2" class="tarjeta" novalidate>
+        <h2 class="paso">Recíbelo cada semana</h2>
+
+        <div class="campo">
+          <label for="email">Tu email</label>
+          <input id="email" name="EMAIL" type="email" autocomplete="email" required placeholder="tu@email.com">
+        </div>
+
+        <div class="fila">
+          <div class="campo">
+            <label for="pais">País</label>
+            <select id="pais" name="PAIS">
+              <option value="ES" selected>España</option>
+              <option value="MX">México</option>
+              <option value="AR">Argentina</option>
+              <option value="CO">Colombia</option>
+              <option value="CL">Chile</option>
+              <option value="PE">Perú</option>
+              <option value="US">Estados Unidos</option>
+              <option value="OTRO">Otro país</option>
+            </select>
+          </div>
+          <div class="campo" id="campo-comunidad">
+            <label for="comunidad">Comunidad <span class="opcional">(opcional)</span></label>
+            <select id="comunidad" name="COMUNIDAD">
+              <option value="">Elige…</option>
+              <option>Andalucía</option><option>Aragón</option><option>Asturias</option><option>Baleares</option>
+              <option>Canarias</option><option>Cantabria</option><option>Castilla-La Mancha</option><option>Castilla y León</option>
+              <option>Cataluña</option><option>Ceuta</option><option>Comunidad de Madrid</option><option>Comunidad Valenciana</option>
+              <option>Extremadura</option><option>Galicia</option><option>La Rioja</option><option>Melilla</option>
+              <option>Murcia</option><option>Navarra</option><option>País Vasco</option>
+            </select>
+            <p class="ayuda">Para avisarte de vacunas, permisos y plazos del cole de tu comunidad.</p>
+          </div>
+        </div>
+
+        <div id="hijos-extra"></div>
+        <button type="button" class="enlace" id="anadir-hijo">+ Añadir otro hijo o hija</button>
+        <p class="ayuda">Con varios hijos recibes un solo email, con un bloque para cada uno.</p>
+
+        <div class="consentimientos">
+          <label class="casilla"><input type="checkbox" id="acepto" required> Quiero recibir Mientras Crece cada semana y acepto la <a href="privacidad.html" target="_blank" rel="noopener">política de privacidad</a>.</label>
+          <label class="casilla" id="bloque-salud" hidden><input type="checkbox" id="acepto-salud"> Doy mi consentimiento expreso para que Mientras Crece trate la fecha prevista de parto o la prematuridad (datos de salud) solo para elegir el contenido de cada semana.</label>
+        </div>
+
+        <!-- El origen viaja dentro de DATOS (ver app.js) -->
+        <input type="hidden" id="h-origen">
+        <input type="text" name="email_address_check" value="" class="trampa" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+        <p class="error" id="error2" role="alert" hidden></p>
+        <button type="submit" class="boton">Apuntarme gratis</button>
+        <p class="ayuda centro">Te mandaremos un email para confirmar. Te das de baja con un clic cuando quieras.</p>
+      </form>
+    </section>
+
+    <section id="gracias" class="tarjeta gracias" hidden aria-live="polite">
+      <h2>Mira tu correo</h2>
+      <p>Te hemos enviado un email para confirmar la suscripción. Hasta que no pulses el enlace, no te llegará nada.</p>
+      <p class="ayuda">¿No lo ves? Mira en «Promociones» o en spam y arrástralo a tu bandeja principal.</p>
+      <p class="aviso" id="modo-prueba" hidden>Modo prueba: el formulario todavía no está conectado a Brevo, así que no se ha guardado nada.</p>
+    </section>
+
+    <section class="como" aria-labelledby="como-titulo">
+      <h2 id="como-titulo">Cómo es cada email</h2>
+      <ul class="bloques">
+        <li><strong>3 minutos.</strong> Entre 600 y 800 palabras, con su nombre y su edad en el asunto.</li>
+        <li><strong>Una sola cosa para hoy.</strong> Un juego de 10 minutos, una frase o una idea concreta. No una lista de deberes.</li>
+        <li><strong>Normal o consulta.</strong> Qué es lo habitual a su edad y cuándo conviene preguntar a su pediatra.</li>
+        <li><strong>Para ti.</strong> El sueño, la pareja, el trabajo y la culpa. Escrito para madres y para padres.</li>
+        <li><strong>Fuentes oficiales, a la vista.</strong> AEP, Ministerio de Sanidad, CDC, OMS. Nunca publicidad en lo que tiene que ver con su salud.</li>
+      </ul>
+    </section>
+
+    <section class="preguntas" aria-labelledby="preguntas-titulo">
+      <h2 id="preguntas-titulo">Preguntas</h2>
+      <details><summary>¿Cuesta algo?</summary><p>No. Mientras Crece es gratis.</p></details>
+      <details><summary>¿Hasta qué edad llega?</summary><p>Ahora mismo, del embarazo hasta el primer año, semana a semana. Estamos escribiendo de 1 a 6 años: si tu hijo es mayor, apúntate y te avisamos en cuanto empiecen los envíos de su edad.</p></details>
+      <details><summary>¿Quién lo escribe?</summary><p>El equipo de Mientras Crece. Cada afirmación lleva su fuente oficial enlazada y lo que tiene que ver con la salud pasa una doble verificación. No sustituye a su pediatra ni a tu matrona.</p></details>
+      <details><summary>¿Qué hacéis con mis datos?</summary><p>Los usamos solo para elegir qué te enviamos cada semana. No los vendemos ni los cedemos. Lo explicamos en la <a href="privacidad.html">política de privacidad</a>.</p></details>
+    </section>
+  </main>
+
+  <footer class="pie">
+    <p>Mientras Crece · <a href="privacidad.html">Privacidad</a> · <a href="mailto:hola@mientrascrece.com">hola@mientrascrece.com</a></p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
