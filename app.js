@@ -8,7 +8,7 @@
   // URL del formulario de Brevo (Formularios → Compartir → «action» del HTML).
   // Mientras esté vacía, la página funciona en modo prueba y no guarda nada.
   // Formulario «Alta web mientrascrece.com» (doble confirmación; lista Suscriptores Mientras Crece).
-  var CONFIG = { brevoFormUrl: "https://e6a2ed3b.sibforms.com/serve/MUIFAL2coej_48v8Ji6sWCtt5v7rPbK2XZhf4yhXkBE_RHIjUNX4ykmmprQpDoniLQWq-Thn2ezw7UKq6-nPmN7CCiiXHB44C99sVIb_09ZPv3Mbar9SgO5MhNdvAYvvAE47wpjHmRiUy78H8E0SZxJ7tOJUHHKScpk-No2eR1BRLVDHwfXGKg3feS8Ok8BGbRWCurr-Nsl4LquIBA" };
+  var CONFIG = { brevoFormUrl: "https://e6a2ed3b.sibforms.com/serve/MUIFAL2coej_48v8Ji6sWCtt5v7rPbK2XZhf4yhXkBE_RHIjUNX4ykmmprQpDoniLQWq-Thn2ezw7UKq6-nPmN7CCiiXHB44C99sVIb_09ZPv3Mbar9SgO5MhNdvAYvvAE47wpjHmRiUy78H8E0SZxJ7tOJUHHKScpk-No2eR1BRLVDHwfXGKg3feS8Ok8BGbRWCurr-Nsl4LquIBA==?isAjax=1" };
 
   var DIA = 86400000;
   var MAX_HIJOS = 3;
