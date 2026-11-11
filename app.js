@@ -250,7 +250,7 @@
       .then(function (r) { return r.json().catch(function () { return { success: r.ok }; }); })
       .then(function (j) {
         if (j && j.success) return fin(false);
-        fallo("No hemos podido apuntarte. Revisa tu email y vuelve a intentarlo; si sigue fallando, escríbenos a hola@mientrascrece.com.");
+        fallo("No hemos podido apuntarte. Revisa tu email y vuelve a intentarlo en unos minutos.");
       })
       .catch(function () { fallo(); });
   });
