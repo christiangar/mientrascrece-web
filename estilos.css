@@ -123,3 +123,16 @@ details p { margin: 8px 0 0; color: var(--suave); }
 .pie { text-align: center; color: var(--suave); font-size: 14px; padding: 24px 16px 40px; }
 
 [hidden] { display: none !important; }
+
+/* Registro en una sola tarjeta (alternativa A, 12 nov 2026) */
+.oculto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.ciudad { position: relative; }
+.sugerencias { position: absolute; z-index: 5; left: 0; right: 0; margin: 4px 0 0; padding: 4px 0; list-style: none;
+  background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 12px; box-shadow: 0 8px 24px rgba(31,42,46,.12); }
+.sugerencias li { padding: 10px 14px; cursor: pointer; line-height: 1.3; }
+.sugerencias li span { color: var(--suave); font-size: 14px; }
+.sugerencias li:hover { background: var(--verde-claro); }
+.ciudad select { margin-top: 8px; }
+.gracias-bloque .gracias { margin-bottom: 20px; }
+.previa-titulo { font-weight: 700; margin: 0 0 10px; }
+#alta .consentimientos { margin: 4px 0 14px; }

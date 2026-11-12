@@ -1,6 +1,6 @@
 /* Mientras Crece · página de suscripción
  * Calcula la semana exacta (motor de edad, docs/editorial/motor-edad.md),
- * enseña el texto instantáneo y envía el alta al formulario de Brevo.
+ * envía el alta al formulario de Brevo y, después, enseña lo que vive esta semana.
  */
 (function () {
   "use strict";
@@ -11,7 +11,6 @@
   var CONFIG = { brevoFormUrl: "https://e6a2ed3b.sibforms.com/serve/MUIFAL2coej_48v8Ji6sWCtt5v7rPbK2XZhf4yhXkBE_RHIjUNX4ykmmprQpDoniLQWq-Thn2ezw7UKq6-nPmN7CCiiXHB44C99sVIb_09ZPv3Mbar9SgO5MhNdvAYvvAE47wpjHmRiUy78H8E0SZxJ7tOJUHHKScpk-No2eR1BRLVDHwfXGKg3feS8Ok8BGbRWCurr-Nsl4LquIBA==?isAjax=1" };
 
   var DIA = 86400000;
-  var MAX_HIJOS = 3;
   var textos = null;
   var $ = function (id) { return document.getElementById(id); };
 
@@ -25,7 +24,8 @@
     return new Date(p[0], p[1] - 1, p[2]);
   }
   function dias(a, b) { return Math.round((b - a) / DIA); }
-  function iso(d) { return d.toISOString().slice(0, 10); }
+  // Fecha local (toISOString pasaría a UTC y en España restaría un día)
+  function iso(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1, 2) + "-" + pad(d.getDate(), 2); }
 
   // Primer lunes desde el 1 de septiembre: inicio de curso por defecto (motor de edad, pista Curso).
   function inicioCurso(anio) {
@@ -85,100 +85,83 @@
   }
   function capital(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
-  // ---------- Paso 1 ----------
-  var paso1 = $("paso1");
-  function tipoActual() { return paso1.querySelector('input[name="tipo"]:checked').value; }
+  function mostrarError(el, msg) { el.textContent = msg; el.hidden = false; }
+  var form = $("alta");
+  function tipoActual() { return form.querySelector('input[name="tipo"]:checked').value; }
 
   function ajustarTipo() {
     var emb = tipoActual() === "embarazo";
     $("etiqueta-fecha").textContent = emb ? "Fecha prevista de parto" : "Su fecha de nacimiento";
-    $("ayuda-fecha").textContent = emb ? "La que te dieron en la ecografía. Si cambia, la podrás corregir." : "Con su fecha sabemos su edad exacta cada semana.";
-    $("bloque-prematuro").hidden = emb;
-    $("nombre").placeholder = emb ? "Si ya lo sabéis (opcional)" : "Por ejemplo, Lucía";
+    $("bloque-salud").hidden = !emb;
   }
-  Array.prototype.forEach.call(paso1.querySelectorAll('input[name="tipo"]'), function (r) { r.addEventListener("change", ajustarTipo); });
-  $("prematuro").addEventListener("change", function () { $("campo-semanas").hidden = !this.checked; });
+  Array.prototype.forEach.call(form.querySelectorAll('input[name="tipo"]'), function (r) { r.addEventListener("change", ajustarTipo); });
 
-  var hijo1 = null;
+  // ---------- Ciudad (D124): de la lista salen provincia, comunidad y país ----------
+  var PAISES = { ES: "España", MX: "México", AR: "Argentina", CO: "Colombia", CL: "Chile", PE: "Perú", US: "Estados Unidos", OTRO: "Otro país" };
+  var ciudades = null, elegida = null, cargando = false;
+  function cargarCiudades() {
+    if (ciudades || cargando) return;
+    cargando = true;
+    fetch("ciudades.json").then(function (r) { return r.json(); }).then(function (d) {
+      ciudades = d.map(function (c) { return { c: c, k: normal(c[0]) }; });
+      buscar();
+    }).catch(function () { cargando = false; });
+  }
+  function normal(t) { return t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""); }
+  function ponerPais(cod) {
+    $("pais").value = PAISES[cod] ? cod : "OTRO";
+    $("pais-texto").textContent = PAISES[$("pais").value];
+  }
+  // País por defecto: el del idioma del móvil (es-MX → México); si no, España.
+  (function () {
+    var m = (navigator.language || "").match(/^es-([A-Z]{2})$/i); // solo si el móvil está en español
+    ponerPais(m && PAISES[m[1].toUpperCase()] ? m[1].toUpperCase() : "ES");
+  })();
+  $("cambiar-pais").addEventListener("click", function () { $("ayuda-pais").hidden = true; $("pais").hidden = false; $("pais").focus(); });
+  $("pais").addEventListener("change", function () { $("pais-texto").textContent = PAISES[this.value]; });
 
-  paso1.addEventListener("submit", function (e) {
-    e.preventDefault();
-    var err = $("error1"); err.hidden = true;
-    var tipo = tipoActual();
-    var nombre = $("nombre").value.trim();
-    var fecha = leerFecha($("fecha").value);
-    var semanas = $("prematuro").checked ? parseInt($("semanas").value, 10) : null;
-
-    if (tipo === "nacido" && !nombre) return mostrarError(err, "Escribe su nombre: va en cada email.");
-    if (!fecha) return mostrarError(err, tipo === "embarazo" ? "Pon la fecha prevista de parto." : "Pon su fecha de nacimiento.");
-    if ($("prematuro").checked && !(semanas >= 22 && semanas <= 36)) return mostrarError(err, "Indica la semana en que nació (entre 22 y 36).");
-    if (!textos) return mostrarError(err, "Un segundo, estamos cargando… Vuelve a pulsar.");
-
-    var r = calcular(tipo, fecha, semanas);
-    if (r.error) return mostrarError(err, r.error);
-    var t = textos[r.id];
-    if (!t) return mostrarError(err, "No hemos encontrado su semana. Revisa la fecha.");
-
-    hijo1 = { tipo: tipo, nombre: nombre, fecha: iso(fecha), semanas: semanas || "" };
-
-    $("r-edad").textContent = (nombre ? nombre + " · " : "") + t.edad;
-    $("r-titular").textContent = conNombre(t.titular, nombre);
-    $("r-texto").textContent = conNombre(t.texto, nombre);
-    $("r-cierre").textContent = conNombre(t.cierre, nombre);
-    var aviso = r.aviso || (t.listo ? null :
-      "Ya tenemos escrito el embarazo y el primer año. Los emails de esta edad están en camino: apúntate y te avisamos en cuanto empiecen.");
-    $("r-aviso").hidden = !aviso; $("r-aviso").textContent = aviso || "";
-
-    $("bloque-salud").hidden = !(tipo === "embarazo" || semanas);
-    $("resultado").hidden = false;
-    $("resultado").scrollIntoView({ behavior: "smooth", block: "start" });
-  });
-
-  function mostrarError(el, msg) { el.textContent = msg; el.hidden = false; }
-
-  // ---------- Más hijos ----------
-  var extra = $("hijos-extra");
-  $("anadir-hijo").addEventListener("click", function () {
-    var n = extra.children.length + 2;
-    if (n > MAX_HIJOS) return;
-    var div = document.createElement("div");
-    div.className = "hijo-extra";
-    div.innerHTML =
-      '<div class="cabeza"><span>Hijo o hija ' + n + '</span><button type="button" class="enlace quitar">Quitar</button></div>' +
-      '<div class="campo"><label>¿En qué momento?</label><select class="x-tipo"><option value="nacido">Ya ha nacido</option><option value="embarazo">Estamos esperando</option></select></div>' +
-      '<div class="campo"><label>Su nombre</label><input type="text" class="x-nombre" maxlength="40"></div>' +
-      '<div class="campo"><label class="x-etq">Su fecha de nacimiento</label><input type="date" class="x-fecha"></div>' +
-      '<div class="campo x-prem"><label>Si nació antes de la semana 37, ¿en qué semana? <span class="opcional">(opcional)</span></label><input type="number" min="22" max="36" class="x-semanas" inputmode="numeric"></div>';
-    div.querySelector(".quitar").addEventListener("click", function () { div.remove(); renumerar(); });
-    div.querySelector(".x-tipo").addEventListener("change", function () {
-      var emb = this.value === "embarazo";
-      div.querySelector(".x-etq").textContent = emb ? "Fecha prevista de parto" : "Su fecha de nacimiento";
-      div.querySelector(".x-prem").hidden = emb;
-      actualizarSalud();
+  var lista = $("sugerencias"), campoCiudad = $("ciudad");
+  function cerrar() { lista.hidden = true; campoCiudad.setAttribute("aria-expanded", "false"); }
+  function buscar() {
+    var q = normal(campoCiudad.value.trim());
+    elegida = null;
+    if (q.length < 2 || !ciudades) return cerrar();
+    var pais = $("pais").value, empieza = [], contiene = [];
+    for (var i = 0; i < ciudades.length && empieza.length < 8; i++) {
+      var x = ciudades[i], pos = x.k.indexOf(q);
+      if (pos === 0) empieza.push(x.c); else if (pos > 0 && contiene.length < 8) contiene.push(x.c);
+    }
+    var res = empieza.concat(contiene);
+    // primero las del país elegido y las de nombre más corto (las coincidencias exactas suben solas)
+    res.sort(function (a, b) { return (a[3] !== pais) - (b[3] !== pais) || a[0].length - b[0].length; });
+    res = res.slice(0, 6);
+    lista.innerHTML = "";
+    res.forEach(function (c, n) {
+      var li = document.createElement("li");
+      li.setAttribute("role", "option"); li.id = "sug-" + n;
+      li.innerHTML = "<strong></strong> <span></span>";
+      li.firstChild.textContent = c[0];
+      li.lastChild.textContent = (c[1] && c[1] !== c[0] ? c[1] + ", " : "") + PAISES[c[3]];
+      li.addEventListener("mousedown", function (e) { e.preventDefault(); elegir(c); });
+      lista.appendChild(li);
     });
-    div.querySelector(".x-semanas").addEventListener("input", actualizarSalud);
-    extra.appendChild(div);
-    renumerar();
+    lista.hidden = !res.length;
+    campoCiudad.setAttribute("aria-expanded", res.length ? "true" : "false");
+  }
+  function elegir(c) {
+    elegida = c;
+    campoCiudad.value = c[0] + (c[1] && c[1] !== c[0] ? " (" + c[1] + ")" : "");
+    ponerPais(c[3]);
+    $("ayuda-pais").hidden = false; $("pais").hidden = true;
+    cerrar();
+  }
+  campoCiudad.addEventListener("focus", cargarCiudades);
+  campoCiudad.addEventListener("input", function () { cargarCiudades(); buscar(); });
+  campoCiudad.addEventListener("blur", function () { setTimeout(cerrar, 150); });
+  campoCiudad.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && !lista.hidden && lista.firstChild) { e.preventDefault(); lista.firstChild.dispatchEvent(new MouseEvent("mousedown")); }
+    if (e.key === "Escape") cerrar();
   });
-  function renumerar() {
-    Array.prototype.forEach.call(extra.children, function (d, i) { d.querySelector(".cabeza span").textContent = "Hijo o hija " + (i + 2); });
-    $("anadir-hijo").hidden = extra.children.length + 1 >= MAX_HIJOS;
-  }
-  function hijosExtra() {
-    return Array.prototype.map.call(extra.children, function (d) {
-      return {
-        tipo: d.querySelector(".x-tipo").value,
-        nombre: d.querySelector(".x-nombre").value.trim(),
-        fecha: d.querySelector(".x-fecha").value,
-        semanas: d.querySelector(".x-tipo").value === "nacido" ? (d.querySelector(".x-semanas").value || "") : ""
-      };
-    });
-  }
-  function hayDatoSalud(lista) { return lista.some(function (h) { return h.tipo === "embarazo" || h.semanas; }); }
-  function actualizarSalud() { $("bloque-salud").hidden = !hayDatoSalud([hijo1 || {}].concat(hijosExtra())); }
-
-  // ---------- País ----------
-  $("pais").addEventListener("change", function () { $("campo-comunidad").hidden = this.value !== "ES"; });
 
   // ---------- Origen (UTM o ruta corta) ----------
   (function () {
@@ -188,31 +171,44 @@
     $("h-origen").value = (partes.join("|") || document.referrer || "directo").slice(0, 200);
   })();
 
-  // ---------- Paso 2 ----------
-  $("paso2").addEventListener("submit", function (e) {
+  // ---------- Envío ----------
+  form.addEventListener("submit", function (e) {
     e.preventDefault();
-    var err = $("error2"); err.hidden = true;
+    var err = $("error"); err.hidden = true;
+    var tipo = tipoActual();
+    var fecha = leerFecha($("fecha").value);
     var email = $("email").value.trim();
+
+    if (!fecha) return mostrarError(err, tipo === "embarazo" ? "Pon la fecha prevista de parto." : "Pon su fecha de nacimiento.");
+    if (!textos) return mostrarError(err, "Un segundo, estamos cargando… Vuelve a pulsar.");
+    var r = calcular(tipo, fecha, null);
+    if (r.error) return mostrarError(err, r.error);
+    var t = textos[r.id];
+    if (!t) return mostrarError(err, "No hemos encontrado su semana. Revisa la fecha.");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return mostrarError(err, "Revisa tu email.");
-    var hijos = [hijo1].concat(hijosExtra());
-    for (var i = 1; i < hijos.length; i++) {
-      var h = hijos[i];
-      if (!leerFecha(h.fecha)) return mostrarError(err, "Falta la fecha del hijo o hija " + (i + 1) + ".");
-      if (h.tipo === "nacido" && !h.nombre) return mostrarError(err, "Falta el nombre del hijo o hija " + (i + 1) + ".");
-      var c = calcular(h.tipo, leerFecha(h.fecha), parseInt(h.semanas, 10) || null);
-      if (c.error) return mostrarError(err, "Hijo o hija " + (i + 1) + ": " + c.error);
-    }
     if (!$("acepto").checked) return mostrarError(err, "Marca la casilla para aceptar la política de privacidad.");
-    if (hayDatoSalud(hijos) && !$("acepto-salud").checked) return mostrarError(err, "Para escribirte por semanas de embarazo o con edad corregida necesitamos tu consentimiento expreso.");
+    if (tipo === "embarazo" && !$("acepto-salud").checked) return mostrarError(err, "Para escribirte por semanas de embarazo necesitamos tu consentimiento expreso.");
+
+    // Lo que vive esta semana: se enseña después, como premio (alternativa A).
+    $("r-edad").textContent = t.edad;
+    $("r-titular").textContent = conNombre(t.titular, "");
+    $("r-texto").textContent = conNombre(t.texto, "");
+    $("r-cierre").textContent = conNombre(t.cierre, "");
+    var aviso = r.aviso || (t.listo ? null :
+      "Ya tenemos escrito el embarazo y el primer año. Los emails de esta edad están en camino: te avisamos en cuanto empiecen.");
+    $("r-aviso").hidden = !aviso; $("r-aviso").textContent = aviso || "";
 
     // Brevo guarda todo en un solo atributo de texto, DATOS (JSON compacto), que lee el motor de envío.
-    // n = nombre, t = tipo (nacido | embarazo), f = fecha (nacimiento o FPP), s = semana de nacimiento si fue prematuro.
+    // n = nombre (se pide en el primer email), t = tipo (nacido | embarazo), f = fecha, s = semana de nacimiento si fue prematuro.
+    var texto = campoCiudad.value.trim();
     var datos = {
-      v: 1,
+      v: 2,
       pais: $("pais").value,
-      com: $("pais").value === "ES" ? $("comunidad").value : "",
-      hijos: hijos.map(function (h) { return { n: h.nombre, t: h.tipo, f: h.fecha, s: h.semanas ? Number(h.semanas) : 0 }; }),
-      salud: $("acepto-salud").checked,
+      ciudad: elegida ? elegida[0] : texto.slice(0, 60),
+      prov: elegida ? elegida[1] : "",
+      com: elegida && elegida[3] === "ES" ? elegida[2] : "",
+      hijos: [{ n: "", t: tipo, f: iso(fecha), s: 0 }],
+      salud: tipo === "embarazo" && $("acepto-salud").checked,
       alta: new Date().toISOString(),
       origen: $("h-origen").value
     };
@@ -223,25 +219,25 @@
     fd.set("locale", "es");
     fd.set("html_type", "simple");
 
-    var boton = $("paso2").querySelector(".boton");
+    var boton = form.querySelector(".boton");
     boton.disabled = true; boton.textContent = "Enviando…";
 
     var fin = function (prueba) {
-      $("resultado").hidden = true;
+      form.hidden = true;
       $("modo-prueba").hidden = !prueba;
       $("gracias").hidden = false;
       $("gracias").scrollIntoView({ behavior: "smooth", block: "start" });
     };
 
-    var trampa = $("paso2").querySelector(".trampa");
+    var trampa = form.querySelector(".trampa");
     if (trampa && trampa.value) return fin(false); // un robot ha rellenado el campo oculto: no se envía nada
 
-    if (!CONFIG.brevoFormUrl) {
+    if (!CONFIG.brevoFormUrl || /[?&]prueba=1/.test(location.search)) {
       if (window.console) console.info("Modo prueba. Datos que se enviarían:", Object.fromEntries(fd.entries()));
       return fin(true);
     }
     var fallo = function (msg) {
-      boton.disabled = false; boton.textContent = "Apuntarme gratis";
+      boton.disabled = false; boton.textContent = "Quiero recibirlo";
       mostrarError(err, msg || "No se ha podido enviar. Revisa tu conexión y vuelve a intentarlo.");
       if (window.console) console.warn("Brevo rechazó el alta:", msg);
     };
