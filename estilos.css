@@ -56,11 +56,12 @@ legend { font-weight: 700; margin-bottom: 10px; }
 
 .opciones { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .opciones legend { grid-column: 1 / -1; }
-.opcion { position: relative; }
+.opcion { position: relative; display: flex; }
 .opcion input { position: absolute; opacity: 0; }
 .opcion span {
-  display: block; text-align: center; padding: 12px 8px; border-radius: 12px;
-  border: 1.5px solid var(--linea); cursor: pointer; font-weight: 600;
+  flex: 1; display: flex; align-items: center; justify-content: center; text-align: center;
+  min-height: 52px; padding: 8px 6px; border-radius: 12px; line-height: 1.2;
+  border: 1.5px solid var(--linea); cursor: pointer; font-weight: 600; font-size: 16px;
 }
 .opcion input:checked + span { border-color: var(--verde); background: var(--verde-claro); color: var(--verde); }
 .opcion input:focus-visible + span { outline: 3px solid var(--coral); outline-offset: 2px; }
@@ -70,7 +71,12 @@ legend { font-weight: 700; margin-bottom: 10px; }
 input[type="text"], input[type="email"], input[type="date"], input[type="number"], select {
   width: 100%; font: inherit; color: inherit; padding: 12px 14px; border-radius: 12px;
   border: 1.5px solid var(--linea); background: #fff; min-height: 48px;
+  display: block; max-width: 100%; min-width: 0;
 }
+/* iOS: el campo de fecha tiene un ancho mínimo propio y se salía de la tarjeta */
+input[type="date"] { -webkit-appearance: none; appearance: none; line-height: 1.4; }
+input[type="date"]::-webkit-date-and-time-value { text-align: left; margin: 0; }
+input[type="date"]::-webkit-calendar-picker-indicator { opacity: .6; }
 input:focus, select:focus { outline: none; border-color: var(--verde); box-shadow: 0 0 0 3px var(--verde-claro); }
 
 .ayuda { color: var(--suave); font-size: 15px; margin: 6px 0 0; }
@@ -80,8 +86,9 @@ input:focus, select:focus { outline: none; border-color: var(--verde); box-shado
 .fila { display: grid; grid-template-columns: 1fr; gap: 0 14px; }
 @media (min-width: 560px) { .fila { grid-template-columns: 1fr 1fr; } }
 
-.casilla { display: flex; gap: 10px; align-items: flex-start; font-weight: 400 !important; margin: 0 0 12px; cursor: pointer; }
-.casilla input { margin-top: 5px; width: 18px; height: 18px; flex: none; accent-color: var(--verde); }
+.casilla { display: flex; gap: 10px; align-items: flex-start; font-weight: 400 !important; margin: 0 0 12px; cursor: pointer; line-height: 1.45; }
+.casilla > span { flex: 1; }
+.casilla input { margin-top: 2px; width: 18px; height: 18px; flex: none; accent-color: var(--verde); }
 
 .boton {
   width: 100%; font: inherit; font-weight: 700; font-size: 18px; color: #fff; background: var(--verde);
@@ -136,3 +143,14 @@ details p { margin: 8px 0 0; color: var(--suave); }
 .gracias-bloque .gracias { margin-bottom: 20px; }
 .previa-titulo { font-weight: 700; margin: 0 0 10px; }
 #alta .consentimientos { margin: 4px 0 14px; }
+
+/* Móvil: que la tarjeta y el botón quepan sin bajar (12 nov 2026) */
+@media (max-width: 480px) {
+  h1 { font-size: 30px; margin: 18px 0 8px; }
+  .entradilla { font-size: 16px; margin-bottom: 16px; }
+  .tarjeta { padding: 18px 16px; }
+  .campo { margin-bottom: 14px; }
+  .campo label { font-size: 15px; margin-bottom: 5px; }
+  fieldset { margin-bottom: 14px; }
+  .ayuda { font-size: 14px; }
+}
